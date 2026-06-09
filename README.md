@@ -1,5 +1,5 @@
 # cc-board
-/
+
 > A live dashboard for all your running Claude Code sessions — see at a glance which is **running / waiting on you / done**, and which project each is in.
 >
 > 一个**多 Claude Code 会话**的实时看板:一眼看清你开的每个 CC 在干嘛(🔴运行中 / 🟡等你确认 / ✅完成 / ⚪空闲)、在哪个项目、最近交代的活是什么。
