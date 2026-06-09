@@ -1,0 +1,8 @@
+# OS / editor junk
+.DS_Store
+*.swp
+*~
+Zone.Identifier
+
+# 运行期产物（不该进仓库）
+/tmp/cc-status/
