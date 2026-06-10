@@ -27,8 +27,10 @@ When you run several Claude Code sessions at once, it's hard to keep track — w
 
 ## Install
 
-**1. Drop the scripts somewhere** (anywhere works; `~/.claude/` shown here):
+**1. Clone the repo and copy the 3 scripts** into `~/.claude/` (any dir works; `~/.claude/` shown here). The `cp` below uses relative paths, so **run it from inside the repo folder**:
 ```bash
+git clone https://github.com/shellmind112/cc-board.git
+cd cc-board
 cp cc-report.sh cc-dashboard.sh cc-format.py ~/.claude/
 chmod +x ~/.claude/cc-report.sh ~/.claude/cc-dashboard.sh ~/.claude/cc-format.py
 ```
@@ -53,11 +55,38 @@ chmod +x ~/.claude/cc-report.sh ~/.claude/cc-dashboard.sh ~/.claude/cc-format.py
 
 > ⚠️ **If your `settings.json` already has content:** don't paste over it — **merge** these 4 hooks into your existing `"hooks"` object (add the entries; only add a whole `"hooks": {...}` if you don't have one). JSON can't have duplicate keys.
 
+**Concretely** — if your `settings.json` currently looks like this:
+```json
+{
+  "model": "opus",
+  "theme": "dark"
+}
+```
+add the `hooks` block as the last key, and **don't forget the comma** after `"dark"`:
+```json
+{
+  "model": "opus",
+  "theme": "dark",
+  "hooks": {
+    "UserPromptSubmit": [ ... ],
+    "PostToolUse":      [ ... ],
+    "Notification":     [ ... ],
+    "Stop":             [ ... ]
+  }
+}
+```
+A missing or extra comma makes the whole file invalid JSON (and Claude Code may refuse to start), so verify it right after editing:
+```bash
+python3 -m json.tool ~/.claude/settings.json   # prints the file if valid, errors out if not
+```
+
 **3. Run the dashboard** (any terminal):
 ```bash
 bash ~/.claude/cc-dashboard.sh
 ```
 That's it — open a few Claude Code sessions and they'll show up.
+
+**Check it worked:** type any message into one of your Claude Code sessions; within ~2s that row should turn 🔴 running and the **Task** column should echo what you just typed. If every row stays ⚪ idle / `(not started)`, the hooks aren't firing — re-check step 2 (usually a JSON syntax slip, or the hooks weren't merged into your existing `"hooks"` object). Re-validate with `python3 -m json.tool ~/.claude/settings.json`.
 
 ---
 
