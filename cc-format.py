@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-# 从 stdin 读 TSV（每行：状态 \t 项目 \t 你交代的活 \t 更新），
-# 按"显示宽度"对齐成表（中文/emoji 算 2 格），每列之间固定 2 格间距。
+# Read TSV from stdin (each line: state \t project \t task \t updated),
+# align it into a table by DISPLAY width (CJK chars / emoji count as 2 cells),
+# with a fixed 2-space gap between columns.
 import sys, unicodedata as u
 
-def dw(s):  # 字符串的显示宽度
+def dw(s):  # display width of a string
     return sum(2 if u.east_asian_width(c) in ('W', 'F') else 1 for c in s)
 
-def pad(s, w):  # 右侧补空格到显示宽度 w
+def pad(s, w):  # right-pad with spaces to display width w
     return s + ' ' * max(0, w - dw(s))
 
-def trunc(s, maxw):  # 按显示宽度安全截断（不切坏中文），超长加省略号
+def trunc(s, maxw):  # safe truncate by display width (won't split a wide char), add ellipsis
     if dw(s) <= maxw:
         return s
     out, w = '', 0
@@ -21,8 +22,8 @@ def trunc(s, maxw):  # 按显示宽度安全截断（不切坏中文），超长
         w += cw
     return out + '…'
 
-HEADER = ['状态', '项目', '你交代的活', '更新']
-GAP = '  '  # 每列间距（统一 2 格）
+HEADER = ['Status', 'Project', 'Task', 'Updated']
+GAP = '  '  # fixed 2-space gap between columns
 
 rows = []
 for line in sys.stdin:
@@ -33,7 +34,7 @@ for line in sys.stdin:
     while len(parts) < 4:
         parts.append('')
     parts = parts[:4]
-    parts[2] = trunc(parts[2], 30)   # "你交代的活"列最多 30 显示宽度
+    parts[2] = trunc(parts[2], 40)   # cap the "Task" column at 40 display cells
     rows.append(parts)
 
 allrows = [HEADER] + rows
@@ -48,4 +49,4 @@ if rows:
     for r in rows:
         print(fmt(r))
 else:
-    print('   （没有检测到正在运行的 CC）')
+    print('   (no running Claude Code sessions)')

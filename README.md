@@ -1,43 +1,39 @@
 # cc-board
 
 > A live dashboard for all your running Claude Code sessions — see at a glance which is **running / waiting on you / done**, and which project each is in.
->
-> 一个**多 Claude Code 会话**的实时看板:一眼看清你开的每个 CC 在干嘛(🔴运行中 / 🟡等你确认 / ✅完成 / ⚪空闲)、在哪个项目、最近交代的活是什么。
 
-开多个 Claude Code 同时干活时,根本顾不过来——哪个跑完了、哪个在等你点确认、哪个还在跑?cc-board 把它们汇总成一张每 2 秒刷新的表:
+When you run several Claude Code sessions at once, it's hard to keep track — which one finished, which is waiting for you to approve something, which is still working? cc-board rolls them all into one table that refreshes every 2 seconds:
 
-![CC看板 demo](demo.gif)
+![cc-board demo](demo.gif)
 
 ---
 
-## 它怎么工作
+## How it works
 
-1. **`cc-report.sh`**(挂在 Claude Code 的 hook 上)—— 每次会话状态变化,把"状态 + 项目 + 你交代的活"写到 `/tmp/cc-status/<终端>`,按终端(pts)区分每个会话。
-2. **`cc-dashboard.sh`** —— 扫描所有活着的 `claude` 进程,读上面的状态文件,每 2 秒刷新成表。
-3. **`cc-format.py`** —— 按"显示宽度"对齐(中文/emoji 算 2 格、安全截断不切坏中文)。
-
----
-
-## 依赖
-
-- **Linux 或 WSL** + `bash` + `python3`。**`python3` 在 WSL/Ubuntu 上系统自带、一般无需安装**(只用来把中文/emoji 列对齐);整个工具**无任何第三方库**。
-- 可选 —— **只有想用「按一个键弹出看板」时才需要**:**Windows Terminal** + **AutoHotkey v2**(见下面「可选:Windows 一键唤起」)。不想要这个便利就完全不用管。
-
-> ⚠️ **目前仅支持 Linux / WSL**:看板靠 `/proc`、`ps`、pts 终端识别来找会话,**macOS 暂不支持**(欢迎 PR)。
+1. **`cc-report.sh`** (wired into Claude Code hooks) — on every state change, writes `state + project + the task you gave it` to `/tmp/cc-status/<terminal>`, keyed per terminal (pts) so each session stays separate.
+2. **`cc-dashboard.sh`** — scans every live `claude` process, reads those status files, and re-renders the table every 2 seconds.
+3. **`cc-format.py`** — aligns the columns by display width (CJK chars / emoji count as 2 cells; truncates without splitting wide characters).
 
 ---
 
-## 安装
+## Requirements
 
-> 这是给**别人(或你换台电脑)**把它装起来的步骤,一共 3 步。
+- **Linux or WSL** + `bash` + `python3` (standard library only — **no third-party packages**; `python3` ships with most distros, so usually nothing to install).
+- Optional, only if you want the one-key pop-up: **Windows Terminal** + **AutoHotkey v2**.
 
-**1. 放脚本**(放哪都行,这里以 `~/.claude/` 为例):
+> ⚠️ **Linux / WSL only for now.** Session detection relies on `/proc`, `ps`, and pts terminals, so **macOS isn't supported yet** (PRs welcome).
+
+---
+
+## Install
+
+**1. Drop the scripts somewhere** (anywhere works; `~/.claude/` shown here):
 ```bash
 cp cc-report.sh cc-dashboard.sh cc-format.py ~/.claude/
 chmod +x ~/.claude/cc-report.sh ~/.claude/cc-dashboard.sh ~/.claude/cc-format.py
 ```
 
-**2. 把 4 个 hook 加进 `~/.claude/settings.json`**(hook = Claude Code 在某些时刻**自动帮你跑的命令**;这 4 个让它在「发消息 / 干活 / 等你确认 / 完成」时把状态报出来):
+**2. Add 4 hooks to `~/.claude/settings.json`** (a hook = a command Claude Code runs for you at certain moments; these 4 make it report status on *prompt / working / waiting / done*):
 ```json
 "hooks": {
   "UserPromptSubmit": [
@@ -55,40 +51,40 @@ chmod +x ~/.claude/cc-report.sh ~/.claude/cc-dashboard.sh ~/.claude/cc-format.py
 }
 ```
 
-> ⚠️ **如果你的 `settings.json` 已经有内容**:别整段粘贴覆盖!把这 4 个 hook **合并进你已有的 `"hooks"` 对象**(已有 `hooks` 就往里加这几项;完全没有,才整个加一个 `"hooks": {...}`)。同一个 JSON 里 key 不能重复。
+> ⚠️ **If your `settings.json` already has content:** don't paste over it — **merge** these 4 hooks into your existing `"hooks"` object (add the entries; only add a whole `"hooks": {...}` if you don't have one). JSON can't have duplicate keys.
 
-**3. 跑看板**(任意终端):
+**3. Run the dashboard** (any terminal):
 ```bash
 bash ~/.claude/cc-dashboard.sh
 ```
-就这样——开几个 CC,这张表就会显示它们。
+That's it — open a few Claude Code sessions and they'll show up.
 
 ---
 
-## 可选:Windows 一键唤起
+## Optional: one-key pop-up on Windows
 
-**A. Windows Terminal profile**(给看板一个专属标签):
+**A. A Windows Terminal profile** (gives the dashboard its own tab):
 ```json
 {
-  "name": "CC看板",
+  "name": "cc-board",
   "commandline": "wsl.exe -d Ubuntu -- bash ~/.claude/cc-dashboard.sh",
   "suppressApplicationTitle": true
 }
 ```
 
-**B. 全局热键 `Win+\`` 开/收看板**(`ccboard.ahk`,需要 AutoHotkey v2):
-双击运行 `ccboard.ahk` 后,按 `Win+\`` 唤起看板、再按收起。
-- 它靠窗口标题 `CC看板` 来找/切看板窗口——确保上面 WT profile 的 `name` 也叫 `CC看板`(或自行改 ahk 里的标题)。
-- 若 Windows Terminal 已把 `Win+\`` 绑给了 quake,先在 WT settings 里删掉那条 `globalSummon` 的 `win+\`` 绑定,免得抢键。
-- `ccboard.ahk` 里还附带了作者自用的"两窗口快速切换"(`Ctrl+1/2` 锁窗、`Alt+\`` 互切),可删可留。
+**B. A global hotkey `Win+\`` to toggle the dashboard** (`ccboard.ahk`, needs AutoHotkey v2):
+Run `ccboard.ahk`, then press `Win+\`` to summon the dashboard, press again to hide.
+- It finds/toggles the dashboard window by the title `cc-board`, so make sure the WT profile `name` above is also `cc-board` (or edit the title in the ahk).
+- If Windows Terminal already binds `Win+\`` to quake mode, remove that `globalSummon` `win+\`` binding in WT settings first so they don't fight over the key.
+- `ccboard.ahk` also bundles a tiny two-window quick-switch (`Ctrl+1/2` to lock, `Alt+\`` to flip) — keep it or delete it.
 
 ---
 
-## 已知限制
+## Known limitations
 
-- 仅 Linux / WSL(见上)。
-- 多开 WT 窗口时,ahk 按标题 `CC看板` 匹配看板窗口;若你有别的窗口标题也含这几个字可能误匹配。
+- Linux / WSL only (see above).
+- With several Windows Terminal windows open, the ahk matches the dashboard by the title `cc-board`; if another window's title also contains that, it may match the wrong one.
 
 ## License
 
-[MIT](LICENSE) —— 随便用 / 改 / 卖,保留版权声明即可。
+[MIT](LICENSE) — use / modify / sell freely, just keep the copyright notice.
