@@ -16,7 +16,11 @@ rows() {  # emit TSV: state \t project \t task \t updated
     file="$DIR/$id"
     state=idle; title="(not started)"; ts=""; proj=""
     if [ -f "$file" ]; then
-      IFS=$'\t' read -r s t ti pr fpid < "$file"
+      # split on tabs WITHOUT collapsing empty fields -- `IFS=$'\t' read` would
+      # merge consecutive tabs (tab is IFS-whitespace) and shift the columns when
+      # a field such as the task is empty, leaving fpid blank -> misread as idle.
+      mapfile -t F < <(awk -F'\t' 'NR==1{print $1;print $2;print $3;print $4;print $5}' "$file")
+      s=${F[0]}; t=${F[1]}; ti=${F[2]}; pr=${F[3]}; fpid=${F[4]}
       if [ -n "$fpid" ] && kill -0 "$fpid" 2>/dev/null; then   # trust it only if the writer is still alive
         state="$s"; ts="$t"; title="$ti"; proj="$pr"
       fi
