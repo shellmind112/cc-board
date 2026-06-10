@@ -26,7 +26,12 @@ file="/tmp/cc-status/$id"
 cwd=$(printf '%s' "$input" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
 prompt=$(printf '%s' "$input" | grep -o '"prompt"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
 [ -z "$cwd" ] && cwd="$PWD"
-proj=$(basename "$cwd")
+# Label the tab by the claude process's REAL cwd (its launch dir), not the cwd the
+# hook reports: an agent `cd`-ing into a subfolder (e.g. ./papers) shifts the hook's
+# logical cwd but NOT the process cwd, which stays at launch. Fall back to hook cwd.
+projdir=$(readlink "/proc/$pid/cwd" 2>/dev/null)
+[ -z "$projdir" ] && projdir="$cwd"
+proj=$(basename "$projdir")
 
 # title (the "Task" column): update it when we got a prompt; otherwise keep the existing one.
 if [ -n "$prompt" ]; then
