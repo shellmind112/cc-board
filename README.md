@@ -18,16 +18,16 @@ When you run several Claude Code sessions at once, it's hard to keep track — w
 
 ## Requirements
 
-- **Linux or WSL** + `bash` + `python3` (standard library only — **no third-party packages**; `python3` ships with most distros, so usually nothing to install).
-- Optional, only if you want the one-key pop-up: **Windows Terminal** + **AutoHotkey v2**.
+- **Core (all you need):** Linux or WSL + `bash` + `python3` (standard library only — **no third-party packages, nothing to `pip install`**; `python3` ships with most distros).
+- **Only for the *optional* global hotkey:** Windows Terminal + AutoHotkey v2. The dashboard itself does **not** need either of these.
 
 > ⚠️ **Linux / WSL only for now.** Session detection relies on `/proc`, `ps`, and pts terminals, so **macOS isn't supported yet** (PRs welcome).
 
 ---
 
-## Install
+## Install (core — zero dependencies)
 
-**1. Clone the repo and copy the 3 scripts** into `~/.claude/` (any dir works; `~/.claude/` shown here). The `cp` below uses relative paths, so **run it from inside the repo folder**:
+**1. Clone the repo and copy the 3 scripts** into `~/.claude/` (any dir works; `~/.claude/` shown here — it already exists if you've run Claude Code). The `cp` below uses relative paths, so **run it from inside the repo folder**:
 ```bash
 git clone https://github.com/shellmind112/cc-board.git
 cd cc-board
@@ -80,39 +80,54 @@ A missing or extra comma makes the whole file invalid JSON (and Claude Code may 
 python3 -m json.tool ~/.claude/settings.json   # prints the file if valid, errors out if not
 ```
 
-**3. Run the dashboard** (any terminal):
-```bash
-bash ~/.claude/cc-dashboard.sh
-```
-That's it — open a few Claude Code sessions and they'll show up.
-
-**Check it worked:** type any message into one of your Claude Code sessions; within ~2s that row should turn 🔴 running and the **Task** column should echo what you just typed. If every row stays ⚪ idle / `(not started)`, the hooks aren't firing — re-check step 2 (usually a JSON syntax slip, or the hooks weren't merged into your existing `"hooks"` object). Re-validate with `python3 -m json.tool ~/.claude/settings.json`.
+That's the whole install. Next, open the dashboard.
 
 ---
 
-## Optional: one-key pop-up on Windows
+## Open the dashboard
 
-**A. A Windows Terminal profile** (gives the dashboard its own tab):
+Three ways, from least to most setup. **The first needs nothing extra** — the others are just conveniences.
+
+### Way 1 — run it and leave it open (simplest, zero setup)
+```bash
+bash ~/.claude/cc-dashboard.sh
+```
+Run it in any terminal/tab and **leave that tab open** — the table refreshes itself every 2 seconds, so you just glance at it whenever. This is all most people ever need.
+
+**Check it worked:** type any message into one of your Claude Code sessions; within ~2s that row should turn 🔴 running and the **Task** column should echo what you just typed. If every row stays ⚪ idle / `(not started)`, the hooks aren't firing — re-check install step 2 (usually a JSON syntax slip, or the hooks weren't merged into your existing `"hooks"` object). Re-validate with `python3 -m json.tool ~/.claude/settings.json`.
+
+### Way 2 — one-click tab in Windows Terminal (still zero dependency)
+Add this profile to your Windows Terminal `settings.json` (inside `"profiles"` → `"list"`). Then **`📊 cc-board` appears in the new-tab `⌄` dropdown** — click it to open the dashboard in its own tab:
 ```json
 {
-  "name": "cc-board",
+  "name": "📊 cc-board",
   "commandline": "wsl.exe -d Ubuntu -- bash ~/.claude/cc-dashboard.sh",
   "suppressApplicationTitle": true
 }
 ```
-
-**B. A global hotkey `Win+\`` to toggle the dashboard** (`ccboard.ahk`, needs AutoHotkey v2):
-Run `ccboard.ahk`, then press `Win+\`` to summon the dashboard, press again to hide.
-- It finds/toggles the dashboard window by the title `cc-board`, so make sure the WT profile `name` above is also `cc-board` (or edit the title in the ahk).
-- If Windows Terminal already binds `Win+\`` to quake mode, remove that `globalSummon` `win+\`` binding in WT settings first so they don't fight over the key.
-- `ccboard.ahk` also bundles a tiny two-window quick-switch (`Ctrl+1/2` to lock, `Alt+\`` to flip) — keep it or delete it.
+No software to install — it's a one-time config edit (mind the commas, same as the hooks step). It does **not** appear automatically; each machine adds the profile once.
 
 ---
 
-## Known limitations
+## Optional (advanced): a global hotkey — needs AutoHotkey
 
-- Linux / WSL only (see above).
-- With several Windows Terminal windows open, the ahk matches the dashboard by the title `cc-board`; if another window's title also contains that, it may match the wrong one.
+> Only bother with this if you want to summon/hide the dashboard with a **single global key** from anywhere. It requires **AutoHotkey v2** installed and **kept running** — a real extra dependency. If you don't want that, Way 1 / Way 2 above already cover everyday use.
+
+`ccboard.ahk` binds **Win+\`** to toggle the dashboard, and also bundles a tiny two-window quick-switch (`Ctrl+1` / `Ctrl+2` to lock two windows, **Alt+\`** to flip between them — delete that part of the script if you don't want it).
+
+1. First add the **Way 2** Windows Terminal profile above — the hotkey opens the dashboard *through* that `📊 cc-board` profile.
+2. Install **AutoHotkey v2**, then run `ccboard.ahk` (double-click it). To make it survive a reboot, drop a shortcut to it in your **Startup** folder (otherwise you re-launch it each boot).
+3. Press **Win+\`** to summon the dashboard; press again to hide.
+
+Notes:
+- It finds the dashboard window by the **unique** title `📊 cc-board`. The 📊 is deliberate — it stops the hotkey from grabbing an ordinary terminal that just happens to sit in a folder named `cc-board` (whose Windows Terminal title would otherwise also be `cc-board`).
+- **Win+\` already taken?** Windows Terminal's built-in *quake mode* may already own Win+\`. If pressing it drops down a plain terminal instead of cc-board, free the key by adding this entry to your WT `keybindings` (and deleting any `globalSummon` action), then **fully restart Windows Terminal**:
+  ```json
+  { "keys": "win+`", "id": null }
+  ```
+  Or simply change `#vkC0` in `ccboard.ahk` to a different key — e.g. `#+b::` for Win+Shift+B.
+
+---
 
 ## License
 
