@@ -22,9 +22,18 @@ id=$(printf '%s' "$tty" | tr '/' '-')   # pts/8 -> pts-8
 mkdir -p /tmp/cc-status
 file="/tmp/cc-status/$id"
 
-# Pull cwd and prompt out of the JSON (no jq dependency; grep/sed the quoted value).
-cwd=$(printf '%s' "$input" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
-prompt=$(printf '%s' "$input" | grep -o '"prompt"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+# Pull cwd and prompt out of the JSON with python3 (already required by cc-format.py).
+# Real JSON parsing correctly handles escaped quotes/newlines that a regex mangles
+# (e.g. a prompt like:  add a "save" button).
+eval "$(printf '%s' "$input" | python3 -c '
+import sys, json, shlex
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+print("cwd="    + shlex.quote(d.get("cwd")    or ""))
+print("prompt=" + shlex.quote(d.get("prompt") or ""))
+')"
 [ -z "$cwd" ] && cwd="$PWD"
 # Label the tab by the claude process's REAL cwd (its launch dir), not the cwd the
 # hook reports: an agent `cd`-ing into a subfolder (e.g. ./papers) shifts the hook's
