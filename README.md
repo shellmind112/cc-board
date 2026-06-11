@@ -53,6 +53,8 @@ chmod +x ~/.claude/cc-report.sh ~/.claude/cc-dashboard.sh ~/.claude/cc-format.py
 }
 ```
 
+> ℹ️ **About 🟡 waiting:** it comes from Claude Code's `Notification` hook, which mostly fires when a session needs your input (e.g. a permission prompt) — but it can also fire for other notifications, so 🟡 waiting means "probably needs you," not a hard guarantee.
+
 > ⚠️ **If your `settings.json` already has content:** don't paste over it — **merge** these 4 hooks into your existing `"hooks"` object (add the entries; only add a whole `"hooks": {...}` if you don't have one). JSON can't have duplicate keys.
 
 **Concretely** — if your `settings.json` currently looks like this:
