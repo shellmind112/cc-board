@@ -8,7 +8,7 @@ DIR=/tmp/cc-status
 FMT="$(dirname "$(readlink -f "$0")")/cc-format.py"   # cc-format.py next to this script
 
 rows() {  # emit TSV: state \t project \t task \t updated
-  local now pid tty id file s t ti pr fpid state ts title proj label age agestr
+  local now pid tty id file s t ti pr fpid state ts title proj label prio age agestr
   now=$(date +%s)
   while read -r pid tty; do
     [ -z "$pid" ] && continue
@@ -27,12 +27,14 @@ rows() {  # emit TSV: state \t project \t task \t updated
     fi
     [ -z "$proj" ] && proj=$(basename "$(readlink /proc/$pid/cwd 2>/dev/null)" 2>/dev/null)
     [ -z "$proj" ] && proj="?"
+    # prio drives row order in render(): surface what needs YOU first.
+    # waiting (blocked on you) > done (go look) > running (nothing to do) > idle.
     case "$state" in
-      running) label="🔴 running" ;;
-      waiting) label="🟡 waiting" ;;
-      done)    label="✅ done" ;;
-      idle)    label="⚪ idle" ;;
-      *)       label="◽ $state" ;;
+      waiting) label="🟡 waiting"; prio=1 ;;
+      done)    label="✅ done";    prio=2 ;;
+      running) label="🔴 running"; prio=3 ;;
+      idle)    label="⚪ idle";    prio=4 ;;
+      *)       label="◽ $state";  prio=5 ;;
     esac
     if [ -n "$ts" ]; then
       age=$(( now - ts ))
@@ -40,13 +42,13 @@ rows() {  # emit TSV: state \t project \t task \t updated
       elif [ "$age" -lt 3600 ]; then agestr="$((age/60))m ago"
       else                           agestr="$((age/3600))h ago"; fi
     else agestr="—"; fi
-    printf '%s\t%s\t%s\t%s\n' "$label" "$proj" "$title" "$agestr"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$prio" "$label" "$proj" "$title" "$agestr"
   done < <(ps -eo pid=,tty=,comm= 2>/dev/null | awk '$3=="claude" && $2 ~ /^pts/ && !seen[$2]++ {print $1, $2}')
 }
 
 render() {
   printf ' cc-board   refreshes every 2s · Ctrl+C to quit\n'
-  rows | python3 "$FMT"
+  rows | sort -t$'\t' -k1,1n -s | cut -f2- | python3 "$FMT"
 }
 
 if [ "$1" = "--once" ]; then render; exit 0; fi
