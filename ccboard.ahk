@@ -1,17 +1,21 @@
 #Requires AutoHotkey v2.0
+SetTitleMatchMode 2   ; "contains" match -- find the window by a substring of its title
 
 ; ===== Win + ` : toggle (summon / hide) the cc-board dashboard =====
-; Finds the dashboard window by its title "cc-board"; launches it if not open.
-; Make sure your Windows Terminal profile that runs cc-dashboard.sh is named "cc-board".
+; Finds the dashboard window by its UNIQUE title "📊 cc-board". The 📊 keeps it from
+; clashing with ordinary terminals opened inside a folder literally named "cc-board"
+; (whose WT title would just be "cc-board"). If not open, launches a brand-new window,
+; so it works even after you've manually closed the dashboard.
+; Make sure your Windows Terminal profile that runs cc-dashboard.sh is named "📊 cc-board".
 #vkC0:: {
-    win := "cc-board ahk_exe WindowsTerminal.exe"
+    win := "📊 cc-board ahk_exe WindowsTerminal.exe"
     if WinExist(win) {
         if WinActive(win)
             WinMinimize(win)        ; visible & focused -> hide
         else
             WinActivate(win)        ; open but in the back -> bring to front
     } else {
-        Run 'wt.exe -w ccboard -p "cc-board"'   ; not open -> launch it
+        Run 'wt.exe -w new -p "📊 cc-board"'   ; not open -> launch a brand-new window
     }
 }
 
