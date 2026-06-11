@@ -50,4 +50,8 @@ else
 fi
 title=$(printf '%s' "$title" | tr '\t\n\r' '   ')   # strip tabs/newlines; truncation is the formatter's job
 
-printf '%s\t%s\t%s\t%s\t%s\n' "$state" "$(date +%s)" "$title" "$proj" "$pid" > "$file"
+# Write atomically: a half-written file reads as empty -> fpid blank -> the
+# dashboard flashes this live session as idle. Write a temp file in the same dir,
+# then rename (atomic within one filesystem) so readers see all-or-nothing.
+tmp="$file.$$"
+printf '%s\t%s\t%s\t%s\t%s\n' "$state" "$(date +%s)" "$title" "$proj" "$pid" > "$tmp" && mv -f "$tmp" "$file"
