@@ -131,6 +131,40 @@ Notes:
 
 ---
 
+## Optional (advanced): Docker / sandboxed sessions
+
+cc-board normally only sees claude sessions on the host. A claude running **inside a Docker container** lives in its own PID namespace, so the host `ps` can't see it. If you run claude in containers (e.g. a YOLO `--dangerously-skip-permissions` sandbox), you can have those show up too — tagged with a 🐳.
+
+> Needs Docker, and it's **opt-in**: nothing changes unless you launch the dashboard with `CC_BOARD_DOCKER=1`. Anyone without Docker (or who doesn't opt in) pays nothing — this whole layer is skipped.
+
+**How it works:** the dashboard asks `docker ps` which containers are running (= alive, since claude is the container's main process) and reads each one's status note from a shared host folder `/tmp/cc-status-docker/`. Liveness *is* the container — stop it and its row disappears within ~2s.
+
+**Per container, three things:**
+
+1. **Mount the shared notes folder** when you launch the container, so its note lands on the host (kept separate from host sessions, so a container can't touch them):
+   ```bash
+   docker run ... -v /tmp/cc-status-docker:/tmp/cc-status  your-image
+   ```
+2. **Put `cc-report.sh` + the 4 hooks inside the container** so its claude actually writes notes — bake them into your image. `cc-report.sh` auto-detects it's in a container (`/.dockerenv`) and keys its note by the container id, so no extra config:
+   ```dockerfile
+   COPY cc-report.sh /root/.claude/cc-report.sh        # adjust to your image's home dir
+   # then add the same 4 hooks from Install step 2 to the container's ~/.claude/settings.json
+   # (needs python3 in the image — most claude images already have it)
+   ```
+3. **Run the dashboard with the flag:**
+   ```bash
+   CC_BOARD_DOCKER=1 bash ~/.claude/cc-dashboard.sh
+   ```
+
+A containerized session then shows up as `🐳 <project>   <state>   <task>`, sorted in with the rest.
+
+**Caveats:**
+- First-class support assumes **claude is the container's main process (PID 1)** — the usual sandbox pattern. If claude is only one of several processes in a long-lived container, "container running" no longer implies "claude alive," so the row may linger.
+- Leave the container's hostname at its default (the container id); a custom `--hostname` makes the note's key not match what `docker ps` reports.
+- The container can read/write only that one shared notes folder — it can't reach the rest of your host. Still, a container *could* write junk notes onto your dashboard, so only enable this for containers you trust.
+
+---
+
 ## License
 
 [MIT](LICENSE) — use / modify / sell freely, just keep the copyright notice.

@@ -17,7 +17,15 @@ while [ "$pid" -gt 1 ]; do
 done
 tty=$(ps -o tty= -p "$pid" 2>/dev/null | tr -d ' ')
 { [ -z "$tty" ] || [ "$tty" = "?" ]; } && tty="unknown"
-id=$(printf '%s' "$tty" | tr '/' '-')   # pts/8 -> pts-8
+if [ -f /.dockerenv ]; then
+  # Inside a Docker container: claude's pts isn't unique (it can even collide with
+  # a host session's pts), so key by the container id (its hostname) instead. The
+  # dashboard mounts the host's /tmp/cc-status-docker over /tmp/cc-status here, so
+  # this note lands on the host where it can read it. See README "Docker support".
+  id="docker-$(cat /proc/sys/kernel/hostname 2>/dev/null)"
+else
+  id=$(printf '%s' "$tty" | tr '/' '-')   # pts/8 -> pts-8
+fi
 
 mkdir -p /tmp/cc-status
 file="/tmp/cc-status/$id"
@@ -41,6 +49,9 @@ print("prompt=" + shlex.quote(d.get("prompt") or ""))
 projdir=$(readlink "/proc/$pid/cwd" 2>/dev/null)
 [ -z "$projdir" ] && projdir="$cwd"
 proj=$(basename "$projdir")
+# In a sandbox the real project is bind-mounted onto a fixed path (e.g. /workspace),
+# which would lose its name; the launcher can pass the real name via CC_BOARD_PROJECT.
+[ -n "${CC_BOARD_PROJECT:-}" ] && proj="$CC_BOARD_PROJECT"
 
 # title (the "Task" column): update it when we got a prompt; otherwise keep the existing one.
 if [ -n "$prompt" ]; then
