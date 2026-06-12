@@ -113,7 +113,7 @@ No software to install — it's a one-time config edit (mind the commas, same as
 
 ## Optional (advanced): a global hotkey — needs AutoHotkey
 
-> Only bother with this if you want to summon/hide the dashboard with a **single global key** from anywhere. It requires **AutoHotkey v2** installed and **kept running** — a real extra dependency. If you don't want that, Way 1 / Way 2 above already cover everyday use.
+> Want to pop the board up — from anywhere, mid-work, without hunting for the terminal tab it lives in — and tuck it away again, all with one key? That's what this adds: tap **Win+\`** and the board drops in front of you; tap again and it's gone. The cost: it needs **AutoHotkey** — [a free Windows tool for custom keyboard shortcuts](https://www.autohotkey.com/) — installed (v2) and **kept running**, a real extra dependency. If you don't want that, Way 1 / Way 2 above already cover everyday use.
 
 `ccboard.ahk` binds **Win+\`** to toggle the dashboard, and also bundles a tiny two-window quick-switch (`Ctrl+1` / `Ctrl+2` to lock two windows, **Alt+\`** to flip between them — delete that part of the script if you don't want it).
 
@@ -155,6 +155,11 @@ cc-board normally only sees claude sessions on the host. A claude running **insi
    ```bash
    CC_BOARD_DOCKER=1 bash ~/.claude/cc-dashboard.sh
    ```
+
+> **Tip — keep the real project name:** if you bind-mount your project onto a fixed path (say `-w /workspace`), the row would otherwise show that mount point (`workspace`) for *every* container, so you couldn't tell them apart. Pass the real name in at launch and `cc-report.sh` will use it:
+> ```bash
+> docker run ... -e CC_BOARD_PROJECT="$(basename "$PWD")"  your-image
+> ```
 
 A containerized session then shows up as `🐳 <project>   <state>   <task>`, sorted in with the rest.
 
